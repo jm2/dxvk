@@ -3,6 +3,10 @@ project('dxvk', ['c', 'cpp'], version : '3.1.1', meson_version : '>= 0.58', defa
 pkg = import('pkgconfig')
 cpu_family = target_machine.cpu_family()
 platform   = target_machine.system()
+
+if get_option('native_macos')
+  add_project_arguments('-DDXVK_NATIVE_MACOS', language : ['c', 'cpp'])
+endif
 fs = import('fs')
 
 cpp = meson.get_compiler('cpp')

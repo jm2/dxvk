@@ -8,6 +8,16 @@
 #include "dxvk_instance.h"
 #include "dxvk_limits.h"
 
+// kisakcod fork: with -Dnative_macos=true these become optional. KosmicKrisp
+// (Mesa's Vulkan driver on Metal) is conformant but cannot provide geometry
+// shaders, wireframe fill or depth-clip control. D3D9 uses a GS only for
+// ProcessVertices; depth clip falls back to depth clamp. See KISAK_MACOS.md.
+#ifdef DXVK_NATIVE_MACOS
+#define DXVK_MACOS_REQUIRED false
+#else
+#define DXVK_MACOS_REQUIRED true
+#endif
+
 namespace dxvk {
 
   #define CORE_VERSIONS                            \
@@ -850,10 +860,10 @@ namespace dxvk {
       ENABLE_FEATURE(core.features, depthClamp, true),
       ENABLE_FEATURE(core.features, drawIndirectFirstInstance, false),
       ENABLE_FEATURE(core.features, dualSrcBlend, true),
-      ENABLE_FEATURE(core.features, fillModeNonSolid, true),
+      ENABLE_FEATURE(core.features, fillModeNonSolid, DXVK_MACOS_REQUIRED),
       ENABLE_FEATURE(core.features, fragmentStoresAndAtomics, true),
       ENABLE_FEATURE(core.features, fullDrawIndexUint32, true),
-      ENABLE_FEATURE(core.features, geometryShader, true),
+      ENABLE_FEATURE(core.features, geometryShader, DXVK_MACOS_REQUIRED),
       ENABLE_FEATURE(core.features, imageCubeArray, true),
       ENABLE_FEATURE(core.features, independentBlend, true),
       ENABLE_FEATURE(core.features, largePoints, false),
@@ -951,7 +961,7 @@ namespace dxvk {
       ENABLE_EXT_FEATURE(extCustomBorderColor, customBorderColorWithoutFormat, false),
 
       /* Depth clip matches D3D semantics where depth clamp does not */
-      ENABLE_EXT_FEATURE(extDepthClipEnable, depthClipEnable, true),
+      ENABLE_EXT_FEATURE(extDepthClipEnable, depthClipEnable, DXVK_MACOS_REQUIRED),
 
       /* Controls depth bias behaviour with emulated depth formats */
       ENABLE_EXT_FEATURE(extDepthBiasControl, depthBiasControl, false),
