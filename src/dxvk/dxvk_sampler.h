@@ -372,7 +372,14 @@ namespace dxvk {
   public:
 
     // Lower limit for sampler counts in Vulkan.
+#ifdef DXVK_NATIVE_MOLTENVK
+    // kisakcod fork: MoltenVK reports 1024 update-after-bind samplers per
+    // stage; a 2048-entry sampler array exceeds that and every sample
+    // reads zero.
+    constexpr static uint32_t MaxSamplerCount = 1024u;
+#else
     constexpr static uint32_t MaxSamplerCount = 2048u;
+#endif
 
     DxvkSamplerPool(DxvkDevice* device);
 

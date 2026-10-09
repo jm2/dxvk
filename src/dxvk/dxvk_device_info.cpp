@@ -8,6 +8,14 @@
 #include "dxvk_instance.h"
 #include "dxvk_limits.h"
 
+// kisakcod fork: with -Dnative_moltenvk=true these features become optional,
+// because MoltenVK (Metal) cannot provide them. See KISAK_MOLTENVK.md.
+#ifdef DXVK_NATIVE_MOLTENVK
+#define DXVK_MVK_REQUIRED false
+#else
+#define DXVK_MVK_REQUIRED true
+#endif
+
 namespace dxvk {
 
   #define CORE_VERSIONS                            \
@@ -51,6 +59,7 @@ namespace dxvk {
     HANDLE_EXT(khrExternalSemaphoreWin32);         \
     HANDLE_EXT(khrIncrementalPresent);             \
     HANDLE_EXT(khrLoadStoreOpNone);                \
+    HANDLE_EXT(khrPortabilitySubset);              \
     HANDLE_EXT(khrMaintenance5);                   \
     HANDLE_EXT(khrMaintenance6);                   \
     HANDLE_EXT(khrMaintenance7);                   \
@@ -853,7 +862,7 @@ namespace dxvk {
       ENABLE_FEATURE(core.features, fillModeNonSolid, true),
       ENABLE_FEATURE(core.features, fragmentStoresAndAtomics, true),
       ENABLE_FEATURE(core.features, fullDrawIndexUint32, true),
-      ENABLE_FEATURE(core.features, geometryShader, true),
+      ENABLE_FEATURE(core.features, geometryShader, DXVK_MVK_REQUIRED),
       ENABLE_FEATURE(core.features, imageCubeArray, true),
       ENABLE_FEATURE(core.features, independentBlend, true),
       ENABLE_FEATURE(core.features, largePoints, false),
@@ -866,7 +875,7 @@ namespace dxvk {
       ENABLE_FEATURE(core.features, sampleRateShading, true),
       ENABLE_FEATURE(core.features, samplerAnisotropy, true),
       ENABLE_FEATURE(core.features, shaderClipDistance, true),
-      ENABLE_FEATURE(core.features, shaderCullDistance, true),
+      ENABLE_FEATURE(core.features, shaderCullDistance, DXVK_MVK_REQUIRED),
       ENABLE_FEATURE(core.features, shaderFloat64, false),
       ENABLE_FEATURE(core.features, shaderImageGatherExtended, true),
       ENABLE_FEATURE(core.features, shaderInt16, true),
@@ -951,7 +960,7 @@ namespace dxvk {
       ENABLE_EXT_FEATURE(extCustomBorderColor, customBorderColorWithoutFormat, false),
 
       /* Depth clip matches D3D semantics where depth clamp does not */
-      ENABLE_EXT_FEATURE(extDepthClipEnable, depthClipEnable, true),
+      ENABLE_EXT_FEATURE(extDepthClipEnable, depthClipEnable, DXVK_MVK_REQUIRED),
 
       /* Controls depth bias behaviour with emulated depth formats */
       ENABLE_EXT_FEATURE(extDepthBiasControl, depthBiasControl, false),
@@ -1012,9 +1021,9 @@ namespace dxvk {
       ENABLE_EXT_FEATURE(extPresentTiming, presentAtRelativeTime, false),
 
       /* Robustness, all features effectively required for correctness */
-      ENABLE_EXT_FEATURE(extRobustness2, robustBufferAccess2, true),
+      ENABLE_EXT_FEATURE(extRobustness2, robustBufferAccess2, DXVK_MVK_REQUIRED),
       ENABLE_EXT_FEATURE(extRobustness2, robustImageAccess2, false),
-      ENABLE_EXT_FEATURE(extRobustness2, nullDescriptor, true),
+      ENABLE_EXT_FEATURE(extRobustness2, nullDescriptor, DXVK_MVK_REQUIRED),
 
       /* Sample locations, used to "disable" MSAA rendering */
       ENABLE_EXT(extSampleLocations, false),
@@ -1057,6 +1066,7 @@ namespace dxvk {
       /* LOAD_OP_NONE for certain tiler optimizations. Core feature
        * in Vulkan 1.4, so probably supported by everything we need. */
       ENABLE_EXT(khrLoadStoreOpNone, true),
+      ENABLE_EXT(khrPortabilitySubset, false),
 
       /* Maintenance features, relied on in various parts of the code */
       ENABLE_EXT_FEATURE(khrMaintenance5, maintenance5, true),
