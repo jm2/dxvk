@@ -1404,6 +1404,7 @@ namespace dxvk {
     Rc<DxvkLatencyTracker>  m_latencyTracker;
     uint64_t                m_latencyFrameId = 0u;
     bool                    m_endLatencyTracking = false;
+    bool                    m_nullSubstitutes = false;
 
     DxvkImplicitResolveTracker  m_implicitResolves;
 
@@ -1899,6 +1900,10 @@ namespace dxvk {
       const DxvkPipelineLayout*       layout);
 
     void freeZeroBuffer();
+
+    void writeNullLegacyImage(
+            DxvkLegacyDescriptor&     descriptorInfo,
+            VkImageViewType           viewType);
 
     void resizeDescriptorArrays(
             uint32_t                  bindingCount);

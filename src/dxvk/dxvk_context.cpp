@@ -103,6 +103,13 @@ namespace dxvk {
     m_trackingId += 1u;
 
     this->beginCurrentCommands();
+
+    // kisakcod fork: devices without nullDescriptor (MoltenVK) get real
+    // substitute resources for unbound slots. Created outside any pass.
+    m_nullSubstitutes = m_common->dummyResources().needsSubstitutes();
+
+    if (unlikely(m_nullSubstitutes))
+      m_common->dummyResources().initSubstitutes(this);
   }
   
   
@@ -7140,6 +7147,9 @@ namespace dxvk {
               descriptorInfo.buffer.buffer = VK_NULL_HANDLE;
               descriptorInfo.buffer.offset = 0;
               descriptorInfo.buffer.range = VK_WHOLE_SIZE;
+
+              if (unlikely(m_nullSubstitutes))
+                descriptorInfo = m_common->dummyResources().bufferSubstitute();
             }
           } else {
             switch (binding.getDescriptorType()) {
@@ -7161,14 +7171,10 @@ namespace dxvk {
 
                     m_cmd->track(view->image(), DxvkAccess::Read);
                   } else {
-                    descriptorInfo.image.sampler = VK_NULL_HANDLE;
-                    descriptorInfo.image.imageView = VK_NULL_HANDLE;
-                    descriptorInfo.image.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+                    writeNullLegacyImage(descriptorInfo, binding.getViewType());
                   }
                 } else {
-                  descriptorInfo.image.sampler = VK_NULL_HANDLE;
-                  descriptorInfo.image.imageView = VK_NULL_HANDLE;
-                  descriptorInfo.image.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+                  writeNullLegacyImage(descriptorInfo, binding.getViewType());
                 }
               } break;
 
@@ -7203,6 +7209,9 @@ namespace dxvk {
                   trackBufferViewBinding<TrackBindings, false>(binding, *res.bufferView);
                 } else {
                   descriptorInfo.bufferView = VK_NULL_HANDLE;
+
+                  if (unlikely(m_nullSubstitutes))
+                    descriptorInfo = m_common->dummyResources().texelBufferSubstitute(false);
                 }
               } break;
 
@@ -7219,6 +7228,9 @@ namespace dxvk {
                   trackBufferViewBinding<TrackBindings, true>(binding, *res.bufferView);
                 } else {
                   descriptorInfo.bufferView = VK_NULL_HANDLE;
+
+                  if (unlikely(m_nullSubstitutes))
+                    descriptorInfo = m_common->dummyResources().texelBufferSubstitute(true);
                 }
               } break;
 
@@ -7237,6 +7249,9 @@ namespace dxvk {
                   descriptorInfo.buffer.buffer = VK_NULL_HANDLE;
                   descriptorInfo.buffer.offset = 0;
                   descriptorInfo.buffer.range = VK_WHOLE_SIZE;
+
+                  if (unlikely(m_nullSubstitutes))
+                    descriptorInfo = m_common->dummyResources().bufferSubstitute();
                 }
               } break;
 
@@ -7255,6 +7270,9 @@ namespace dxvk {
                   descriptorInfo.buffer.buffer = VK_NULL_HANDLE;
                   descriptorInfo.buffer.offset = 0;
                   descriptorInfo.buffer.range = VK_WHOLE_SIZE;
+
+                  if (unlikely(m_nullSubstitutes))
+                    descriptorInfo = m_common->dummyResources().bufferSubstitute();
                 }
               } break;
 
@@ -7869,6 +7887,13 @@ namespace dxvk {
         }
 
         m_cmd->track(m_state.vi.vertexBuffers[binding].buffer(), DxvkAccess::Read);
+      } else if (unlikely(m_nullSubstitutes)) {
+        // No nullDescriptor: bind the zero-filled dummy buffer instead
+        auto dummy = m_common->dummyResources().bufferInfo();
+        buffers[i] = dummy.buffer;
+        offsets[i] = dummy.offset;
+        lengths[i] = dummy.size;
+        strides[i] = 0;
       } else {
         buffers[i] = VK_NULL_HANDLE;
         offsets[i] = 0;
@@ -9263,6 +9288,20 @@ namespace dxvk {
     // Delete zero buffer if it hasn't been actively used in a while
     if (m_zeroBuffer->getTrackId() + ZeroBufferLifetime < m_trackingId)
       m_zeroBuffer = nullptr;
+  }
+
+
+  void DxvkContext::writeNullLegacyImage(
+          DxvkLegacyDescriptor&     descriptorInfo,
+          VkImageViewType           viewType) {
+    descriptorInfo.image.sampler = VK_NULL_HANDLE;
+    descriptorInfo.image.imageView = VK_NULL_HANDLE;
+    descriptorInfo.image.imageLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+    if (unlikely(m_nullSubstitutes)) {
+      if (auto substitute = m_common->dummyResources().imageSubstitute(viewType))
+        descriptorInfo = *substitute;
+    }
   }
 
 
