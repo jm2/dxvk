@@ -40,3 +40,28 @@ The earlier `kisakcod-moltenvk` branch made DXVK create a device and draw on
 MoltenVK. It added portability enumeration, null-descriptor substitutes and a
 1024 sampler cap, but texture sampling still read zero. Upstream does not
 support portability-subset drivers, so that branch is kept only as a record.
+
+## Maintaining the branch
+
+Patch order on top of upstream `master` (oldest first):
+
+1. `[native] Fix building DXVK Native on macOS`: upstream PR #5962. Drop it once that merges.
+2. `[native] Find the executable and the Vulkan loader on macOS`: `getExePath` and the dylib loader names. Offer it upstream once DXVK runs on a macOS driver without fork-only relaxations.
+3. `[dxvk] Clip depth through depth clamp when VK_EXT_depth_clip_enable is absent`: upstreamable.
+4. `[kisakcod] Add -Dnative_macos`: fork only.
+5. This document.
+
+To rebase onto a new upstream release:
+
+```
+git fetch upstream
+git rebase --onto <new-upstream-tag-or-master> <old-base> kisakcod-macos
+```
+
+Then re-check each patch:
+
+- **Build:** run the `meson setup` command above, then `ninja`. If upstream adds a new `--version-script` site or another `__unix__`-only shim, extend patch 1 the same way.
+- **Requirements:** if upstream adds a required device feature, query it on KosmicKrisp. If it's missing and D3D9 doesn't use it, add it to the `DXVK_MACOS_REQUIRED` list in patch 4.
+- **Run:** a small D3D9 program (SDL3 window, fixed-function quad) must create its device, draw a sampled texture in the right colour, and present on KosmicKrisp. Run it under the Khronos validation layer as well. The only expected report is DXVK's intentional `t2d`/`tcube` binding aliasing.
+
+Then push the branch and bump the `GIT_TAG` SHA in kisakcod's `scripts/extern/dxvk_macos.cmake`, in a kisakcod PR that states the run evidence.
