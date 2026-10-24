@@ -19,7 +19,7 @@ At run time, select the driver with
 | Patch | Status | Why |
 |---|---|---|
 | Build on macOS: `__APPLE__` compat shims, `<cstddef>`, no GNU `--version-script` on darwin, `tzcnt` overload by width | upstream PR doitsujin/dxvk#5962 | DXVK Native did not compile on macOS. |
-| `getExePath` via `_NSGetExecutablePath`, `libvulkan.1.dylib` loader names | fork | `getExePath` fell off the end of the function and trapped, and the loader was not found. Upstream will see this again only once DXVK runs on a macOS driver without fork-only relaxations. |
+| `getExePath` via `_NSGetExecutablePath`, `libvulkan.1.dylib` loader names | upstream PR doitsujin/dxvk#6000 | `getExePath` fell off the end of the function and trapped, and the loader was not found. Upstream will see this again only once DXVK runs on a macOS driver without fork-only relaxations. |
 | Depth clip without `VK_EXT_depth_clip_enable`: `depthClampEnable = !depthClip`, and the depth-clip struct is chained only when supported | fork (upstreamable) | DXVK always enables depth clamp and relies on the extension to turn clipping back on. Without it, geometry past the far plane would be clamped instead of clipped. |
 | `-Dnative_macos`: `geometryShader`, `fillModeNonSolid` and `depthClipEnable` become optional | fork only | KosmicKrisp provides every other DXVK requirement, including robustness2 `nullDescriptor`. D3D9 uses a GS only for `ProcessVertices` (SWVP emulation), which kisakcod never calls. Wireframe fill is for debug views only. |
 
@@ -36,17 +36,17 @@ every driver.
 
 ## MoltenVK (not used)
 
-The earlier `kisakcod-moltenvk` branch made DXVK create a device and draw on
+The earlier `kisakcod-moltenvk` work (now the tag `archive/kisakcod-moltenvk`) made DXVK create a device and draw on
 MoltenVK. It added portability enumeration, null-descriptor substitutes and a
 1024 sampler cap, but texture sampling still read zero. Upstream does not
-support portability-subset drivers, so that branch is kept only as a record.
+support portability-subset drivers, so it is kept only as a record.
 
 ## Maintaining the branch
 
 Patch order on top of upstream `master` (oldest first):
 
 1. `[native] Fix building DXVK Native on macOS`: upstream PR #5962. Drop it once that merges.
-2. `[native] Find the executable and the Vulkan loader on macOS`: `getExePath` and the dylib loader names. Offer it upstream once DXVK runs on a macOS driver without fork-only relaxations.
+2. `[native] Find the executable and the Vulkan loader on macOS`: `getExePath` and the dylib loader names: upstream PR #6000. Drop it once that merges.
 3. `[dxvk] Clip depth through depth clamp when VK_EXT_depth_clip_enable is absent`: upstreamable.
 4. `[kisakcod] Add -Dnative_macos`: fork only.
 5. This document.
